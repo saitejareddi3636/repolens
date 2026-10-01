@@ -185,7 +185,7 @@ export const actions: Record<string, ActionHandler<Env>> = {
       env,
       "anthropic/chat-completion",
       {
-        model: "claude-haiku-4-5",
+        model: "claude-opus-5-5",
         max_tokens: 950,
         temperature: 0,
         system:
