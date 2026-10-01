@@ -1,7 +1,13 @@
 # Submission draft
 
-Live URL: pending verified deployment.
-Repository: pending source publication.
+Live URL: https://repolens.app.space
+
+Published walkthrough: https://repolens.app.space/home?analysis=22c2e718-006e-4206-9d73-0230d7a7152a
+
+Source: native DeepSpace Git repository (authenticated):
+`https://deploy-worker.deep.space/api/repo/app_01M3THEGZEE2G13VFYXTZN941J`
+
+Confirm reviewer access before using this repository endpoint in the portal; it is not a public GitHub page.
 
 RepoLens turns a public JavaScript or TypeScript repository into an interactive source atlas. Users inspect static import relationships, follow source-linked walkthroughs, ask contextual questions, collaborate on explanations, and publish a separate shareable snapshot.
 

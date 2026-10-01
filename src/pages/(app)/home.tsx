@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { AuthOverlay, getAuthToken, useAuth, useQuery } from "deepspace";
+import {
+  AuthOverlay,
+  getAuthToken,
+  signOut,
+  useAuth,
+  useQuery,
+} from "deepspace";
 import { useSearchParams } from "react-router-dom";
 import Workspace from "../../repolens/Workspace";
 import example from "../../repolens/example.json";
@@ -56,6 +62,9 @@ export default function Home() {
           currentId,
           select: (id) => setParams(id ? { analysis: id } : {}),
           login: () => setLogin(true),
+          logout: () => {
+            void signOut();
+          },
           action,
         }}
       />

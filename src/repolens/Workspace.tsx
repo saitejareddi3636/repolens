@@ -33,6 +33,7 @@ export type Bridge = {
   currentId: string | null;
   select: (id: string | null) => void;
   login: () => void;
+  logout: () => void;
   action: (
     name: string,
     params: Record<string, unknown>,
@@ -212,6 +213,11 @@ export default function Workspace({
           <button className="rl-primary" onClick={openImport}>
             <Plus size={16} /> Import repository
           </button>
+          {bridge?.signedIn && (
+            <button className="rl-quiet" onClick={bridge.logout}>
+              Sign out
+            </button>
+          )}
           {bridge && !bridge.signedIn && (
             <button className="rl-quiet" onClick={bridge.login}>
               Sign in
@@ -613,7 +619,12 @@ export default function Workspace({
                   </div>
                   <div className="rl-tour-extras">
                     <button
-                      disabled={!!busy}
+                      disabled={!!busy || !canEdit}
+                      title={
+                        !canEdit
+                          ? "Import a repository to narrate your own tour"
+                          : undefined
+                      }
                       onClick={async () => {
                         const r = await act(
                           "narrate-tour",
@@ -639,7 +650,12 @@ export default function Workspace({
                       </button>
                     )}
                     <button
-                      disabled={!!busy}
+                      disabled={!!busy || !isOwner}
+                      title={
+                        !isOwner
+                          ? "Available to the repository owner"
+                          : undefined
+                      }
                       onClick={() =>
                         act(
                           "explain-tour",
@@ -778,6 +794,7 @@ export default function Workspace({
                 >
                   <input
                     aria-label="Question about selected module"
+                    disabled={!canEdit}
                     placeholder="What is this responsible for?"
                     value={question}
                     maxLength={600}
@@ -785,11 +802,16 @@ export default function Workspace({
                   />
                   <button
                     aria-label="Ask source question"
-                    disabled={!!busy || !question.trim()}
+                    disabled={!!busy || !canEdit || !question.trim()}
                   >
                     <ArrowRight size={16} />
                   </button>
                 </form>
+                {!canEdit && (
+                  <button className="rl-quiet" onClick={openImport}>
+                    Import a repository to use AI
+                  </button>
+                )}
                 {answer && <p className="rl-answer">{answer}</p>}
                 <small>
                   AI explanations are interpretations. Verify against source.
