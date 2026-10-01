@@ -64,6 +64,7 @@ export default function Workspace({
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [focusGraph, setFocusGraph] = useState(false);
+  const [inspectorExpanded, setInspectorExpanded] = useState(false);
   const graphViewport = useRef<HTMLDivElement>(null);
   useEffect(() => {
     graphViewport.current?.scrollTo({ top: 0, left: 0 });
@@ -760,13 +761,28 @@ export default function Workspace({
                 </div>
               )}
             </section>
-            <aside className="rl-inspector">
+            <aside
+              className={"rl-inspector" + (inspectorExpanded ? " is-expanded" : "")}
+            >
               <div className="rl-inspector-label">
                 <span>
                   <Code2 size={16} />
                   Source inspector
                 </span>
-                <span className="rl-dot data" />
+                <button
+                  className="rl-inspector-expand"
+                  type="button"
+                  aria-label={
+                    inspectorExpanded
+                      ? "Collapse source inspector"
+                      : "Expand source inspector"
+                  }
+                  aria-pressed={inspectorExpanded}
+                  onClick={() => setInspectorExpanded((expanded) => !expanded)}
+                >
+                  {inspectorExpanded ? <X size={15} /> : <Maximize2 size={15} />}
+                  {inspectorExpanded ? "Collapse" : "Expand"}
+                </button>
               </div>
               <div className="rl-inspector-summary">
                 <span className={"rl-pill " + node?.layer}>
@@ -879,7 +895,12 @@ export default function Workspace({
                     Import a repository to use AI
                   </button>
                 )}
-                {answer && <p className="rl-answer">{answer}</p>}
+                {answer && (
+                  <div className="rl-answer-block">
+                    <strong>AI answer · Claude Haiku 4.5</strong>
+                    <p className="rl-answer">{answer}</p>
+                  </div>
+                )}
                 <small>
                   AI explanations are interpretations. Verify against source.
                 </small>
