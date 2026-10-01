@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import type { Analysis, AnalysisRow, Citation } from "./model";
+import type { SourceAnswer } from "./answer";
 import { sourceUrl } from "./model";
 import "./repolens.css";
 export type Bridge = {
@@ -42,6 +43,16 @@ export type Bridge = {
   ) => Promise<Record<string, unknown>>;
 };
 const layers = ["interface", "server", "data", "foundation"] as const;
+function mostConnected(analysis: Analysis) {
+  const counts = new Map<string, number>();
+  for (const edge of analysis.edges) {
+    counts.set(edge.source, (counts.get(edge.source) || 0) + 1);
+    counts.set(edge.target, (counts.get(edge.target) || 0) + 1);
+  }
+  return [...analysis.nodes].sort(
+    (a, b) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0),
+  )[0]?.id || "";
+}
 const layerNames = {
   interface: "Interface",
   server: "Server",
@@ -56,14 +67,12 @@ export default function Workspace({
   bridge?: Bridge;
 }) {
   const [view, setView] = useState<"map" | "tour" | "source">("map");
-  const [selected, setSelected] = useState(
-    analysis.nodes.find((n) => n.id === "worker.ts")?.id ||
-      analysis.nodes[0]?.id ||
-      "",
-  );
+  const [selected, setSelected] = useState(() => mostConnected(analysis));
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [focusGraph, setFocusGraph] = useState(false);
+  const [focusGraph, setFocusGraph] = useState(
+    analysis.nodes.length > 24 && analysis.edges.length > 0,
+  );
   const [inspectorExpanded, setInspectorExpanded] = useState(false);
   const graphViewport = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -82,7 +91,11 @@ export default function Workspace({
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [answer, setAnswer] = useState<SourceAnswer | null>(null);
+  const answerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (answer) answerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [answer]);
   const [audio, setAudio] = useState("");
   const [edit, setEdit] = useState(false);
   const [title, setTitle] = useState("");
@@ -179,7 +192,7 @@ export default function Workspace({
   }
   function choose(path: string) {
     setSelected(path);
-    setAnswer("");
+    setAnswer(null);
   }
   async function copyLink() {
     try {
@@ -345,7 +358,10 @@ export default function Workspace({
                 }}
               >
                 <span className={"rl-dot " + n.layer} />
-                <span>{n.label}</span>
+                <span className="rl-file-name">
+                  <strong>{n.label}</strong>
+                  <small>{n.id.split("/").slice(0, -1).join("/") || "Project root"}</small>
+                </span>
               </button>
             ))}
             {!filtered.length && (
@@ -496,7 +512,7 @@ export default function Workspace({
                   <div className="rl-graph-controls">
                     <div>
                       <strong>
-                        {focusGraph ? node?.label : "Repository map"}
+                        {focusGraph ? node?.id : "Repository map"}
                       </strong>
                       <span>
                         {graphNodes.length} modules ·{" "}
@@ -595,7 +611,7 @@ export default function Workspace({
                   <div className="rl-map-foot">
                     <span>
                       <span className="rl-line-key" />
-                      Static import relationship
+                      Lines connect resolved local imports only
                     </span>
                     <span>
                       <Maximize2 size={13} />
@@ -800,7 +816,122 @@ export default function Workspace({
                   <span>
                     <strong>{node?.exports.length}</strong> exports
                   </span>
+                  <span>
+                    <strong>{analysis.edges.filter((e) => e.source === node?.id || e.target === node?.id).length}</strong> local links
+                  </span>
                 </div>
+              </div>
+              <div className="rl-ask">
+                <h3>
+                  <Sparkles size={15} />
+                  Ask about this file
+                </h3>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const r = await act(
+                      "ask-source",
+                      { question, path: node?.id },
+                      "Answer ready",
+                    );
+                    if (r?.answer && typeof r.answer === "object")
+                      setAnswer(r.answer as SourceAnswer);
+                  }}
+                >
+                  <input
+                    aria-label="Question about selected file"
+                    disabled={!canEdit}
+                    placeholder="Where can this file fail?"
+                    value={question}
+                    maxLength={600}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  />
+                  <button
+                    aria-label="Ask about this file"
+                    disabled={!!busy || !canEdit || !question.trim()}
+                  >
+                    {busy === "ask-source" ? "Asking…" : "Ask"}
+                  </button>
+                </form>
+                {!canEdit && (
+                  <button className="rl-quiet" onClick={openImport}>
+                    Import a repository to use AI
+                  </button>
+                )}
+                <small>
+                  Answers use this file only. For a repository overview, use Walkthroughs.
+                </small>
+              </div>
+              {answer && (
+                <div className="rl-answer-block" ref={answerRef}>
+                  <strong>Source-linked answer</strong>
+                  <p className="rl-answer-summary">{answer.summary}</p>
+                  <div className="rl-findings">
+                    {answer.findings.map((finding, index) => (
+                      <div className="rl-finding" key={index}>
+                        <h4>{finding.title}</h4>
+                        <p>{finding.detail}</p>
+                        <a
+                          href={sourceUrl(analysis, finding.citation)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {finding.citation.path.split("/").pop()} · L{finding.citation.start}–{finding.citation.end}
+                          <ArrowUpRight size={12} />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="rl-answer-next"><strong>Next check</strong> {answer.nextStep}</p>
+                  <small>{answer.limitation}</small>
+                </div>
+              )}
+              <div className="rl-inspector-section">
+                <h3>Connected modules</h3>
+                {analysis.edges
+                  .filter((e) => e.source === node?.id || e.target === node?.id)
+                  .slice(0, 7)
+                  .map((e, i) => (
+                    <div className="rl-connection-row" key={i}>
+                      <button
+                        className="rl-connection"
+                        onClick={() => {
+                          choose(e.source === node?.id ? e.target : e.source);
+                          if (view === "tour") setView("map");
+                        }}
+                        title={e.source === node?.id ? e.target : e.source}
+                      >
+                        <GitBranch size={14} />
+                        <span>
+                          {(e.source === node?.id ? e.target : e.source)
+                            .split("/")
+                            .pop()}
+                        </span>
+                        <small>
+                          {e.source === node?.id ? "imports" : "imported by"}
+                        </small>
+                      </button>
+                      <a
+                        href={sourceUrl(analysis, {
+                          path: e.source,
+                          start: e.line,
+                          end: e.line,
+                        })}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Open import at ${e.source} line ${e.line}`}
+                      >
+                        L{e.line} <ArrowUpRight size={11} />
+                      </a>
+                    </div>
+                  ))}
+                {!analysis.edges.some(
+                  (e) => e.source === node?.id || e.target === node?.id,
+                ) && (
+                  <p className="rl-muted">
+                    No lines for this module: its imports are external or could not be resolved to files in this bounded snapshot.
+                  </p>
+                )}
               </div>
               <div className="rl-code-title">
                 <span>
@@ -826,85 +957,6 @@ export default function Workspace({
                   />
                 </div>
               )}
-              <div className="rl-inspector-section">
-                <h3>Connected modules</h3>
-                {analysis.edges
-                  .filter((e) => e.source === node?.id || e.target === node?.id)
-                  .slice(0, 7)
-                  .map((e, i) => (
-                    <button
-                      className="rl-connection"
-                      key={i}
-                      onClick={() => {
-                        choose(e.source === node?.id ? e.target : e.source);
-                        if (view === "tour") setView("map");
-                      }}
-                    >
-                      <GitBranch size={14} />
-                      <span>
-                        {(e.source === node?.id ? e.target : e.source)
-                          .split("/")
-                          .pop()}
-                      </span>
-                      <small>
-                        {e.source === node?.id ? "imports" : "imported by"}
-                      </small>
-                    </button>
-                  ))}
-                {!analysis.edges.some(
-                  (e) => e.source === node?.id || e.target === node?.id,
-                ) && (
-                  <p className="rl-muted">
-                    No local imports resolved in this snapshot.
-                  </p>
-                )}
-              </div>
-              <div className="rl-ask">
-                <h3>
-                  <Sparkles size={15} />
-                  Ask about this module
-                </h3>
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const r = await act(
-                      "ask-source",
-                      { question, path: node?.id },
-                      "Answer ready",
-                    );
-                    if (typeof r?.answer === "string") setAnswer(r.answer);
-                  }}
-                >
-                  <input
-                    aria-label="Question about selected module"
-                    disabled={!canEdit}
-                    placeholder="What is this responsible for?"
-                    value={question}
-                    maxLength={600}
-                    onChange={(e) => setQuestion(e.target.value)}
-                  />
-                  <button
-                    aria-label="Ask source question"
-                    disabled={!!busy || !canEdit || !question.trim()}
-                  >
-                    <ArrowRight size={16} />
-                  </button>
-                </form>
-                {!canEdit && (
-                  <button className="rl-quiet" onClick={openImport}>
-                    Import a repository to use AI
-                  </button>
-                )}
-                {answer && (
-                  <div className="rl-answer-block">
-                    <strong>AI answer · Claude Haiku 4.5</strong>
-                    <p className="rl-answer">{answer}</p>
-                  </div>
-                )}
-                <small>
-                  AI explanations are interpretations. Verify against source.
-                </small>
-              </div>
             </aside>
           </div>
           <footer className="rl-footnote">

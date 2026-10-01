@@ -1539,3 +1539,120 @@
     transition: none;
   }
 }
+
+/* Keep file paths visible when a repository has many identical filenames. */
+.rl-file-list button .rl-file-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rl-file-name strong,
+.rl-file-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.rl-file-name small {
+  font-size: 10px;
+  color: var(--rl-muted);
+}
+.rl-answer-block {
+  margin: 12px 16px 16px;
+  padding: 16px;
+  background: #f7f9fe;
+  border-color: #cddbf8;
+}
+.rl-answer-summary {
+  margin: 8px 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #243e65;
+}
+.rl-findings {
+  display: grid;
+  gap: 12px;
+}
+.rl-finding {
+  border-top: 1px solid #dfe7f4;
+  padding-top: 11px;
+}
+.rl-finding h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #263a58;
+}
+.rl-finding p,
+.rl-answer-next {
+  margin: 0 0 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #526783;
+}
+.rl-finding a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #315ee8;
+  font-size: 11px;
+}
+.rl-answer-next {
+  margin-top: 14px;
+}
+.rl-answer-next strong {
+  color: #263a58;
+}
+.rl-answer-block > small {
+  display: block;
+  margin-top: 7px;
+  color: #718299;
+  line-height: 1.45;
+}
+
+.rl-ask form button {
+  min-width: 62px;
+  padding: 7px 12px;
+  background: #315ee8;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rl-ask form button:disabled {
+  background: #e7edfa;
+  color: #8ca0c8;
+  cursor: not-allowed;
+}
+.rl-inspector-section .rl-muted {
+  line-height: 1.5;
+}
+
+.rl-connection-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.rl-connection-row .rl-connection {
+  min-width: 0;
+  flex: 1;
+}
+.rl-connection-row > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  color: #315ee8;
+  padding: 6px;
+  font-size: 11px;
+  border-radius: 5px;
+}
+.rl-connection-row > a:hover {
+  background: #eaf0ff;
+}
+
+.rl-small-stats {
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
