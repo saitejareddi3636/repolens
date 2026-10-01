@@ -14,8 +14,13 @@ describe("source answer evidence", () => {
   it("accepts source-linked findings", () => {
     expect(parseSourceAnswer(JSON.stringify(answer), file)).toEqual(answer);
   });
-  it("rejects invented citations", () => {
+  it("attaches the selected path to a line-only citation", () => {
+    const result = parseSourceAnswer(JSON.stringify({ ...answer, findings: [{ ...answer.findings[0], citation: { line: 2 } }] }), file);
+    expect(result.findings[0].citation).toEqual({ path: "src/route.ts", start: 2, end: 2 });
+  });
+  it("drops invented citations without attributing them to source", () => {
     const wrong = { ...answer, findings: [{ ...answer.findings[0], citation: { path: "missing.ts", start: 1, end: 2 } }, answer.findings[1]] };
-    expect(() => parseSourceAnswer(JSON.stringify(wrong), file)).toThrow();
+    expect(parseSourceAnswer(JSON.stringify(wrong), file).findings).toEqual([answer.findings[1]]);
+    expect(() => parseSourceAnswer(JSON.stringify({ ...answer, findings: [wrong.findings[0]] }), file)).toThrow();
   });
 });

@@ -13,10 +13,7 @@ export type SourceAnswer = {
   limitation: string;
 };
 
-export function parseSourceAnswer(
-  response: string,
-  file: SourceFile,
-): SourceAnswer {
+export function parseSourceAnswer(response: string, file: SourceFile): SourceAnswer {
   const raw = response.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   let value: unknown;
   try {
@@ -27,23 +24,40 @@ export function parseSourceAnswer(
   if (!value || typeof value !== "object")
     throw new Error("The AI response could not be checked against source. Try again.");
   const answer = value as Partial<SourceAnswer>;
-  const validText = (text: unknown, max: number) =>
-    typeof text === "string" && text.trim().length > 0 && text.length <= max;
-  if (
-    !validText(answer.summary, 350) ||
-    !validText(answer.nextStep, 350) ||
-    !validText(answer.limitation, 250) ||
-    !Array.isArray(answer.findings) ||
-    answer.findings.length < 2 ||
-    answer.findings.length > 4 ||
-    !answer.findings.every(
-      (finding) =>
-        finding &&
-        validText(finding.title, 80) &&
-        validText(finding.detail, 300) &&
-        validCitation(finding.citation, [file])
-    )
-  )
-    throw new Error("The AI response cited unsupported source. Try again.");
-  return answer as SourceAnswer;
+  const text = (value: unknown, fallback: string, max: number) =>
+    typeof value === "string" && value.trim() ? value.trim().slice(0, max) : fallback;
+  const findings = (Array.isArray(answer.findings) ? answer.findings : [])
+    .flatMap((finding: unknown) => {
+      if (!finding || typeof finding !== "object") return [];
+      const item = finding as Partial<SourceFinding>;
+      const rawCitation = item.citation as (Partial<Citation> & { line?: number }) | undefined;
+      const start = Number(rawCitation?.start ?? rawCitation?.line);
+      const end = Number(rawCitation?.end ?? rawCitation?.line ?? rawCitation?.start);
+      const suppliedPath = rawCitation?.path;
+      if (
+        suppliedPath &&
+        suppliedPath !== file.path &&
+        suppliedPath !== file.path.split("/").pop()
+      ) return [];
+      const citation = { path: file.path, start, end };
+      if (
+        !item.title ||
+        !item.detail ||
+        !validCitation(citation, [file])
+      ) return [];
+      return [{
+        title: text(item.title, "Source finding", 80),
+        detail: text(item.detail, "", 300),
+        citation,
+      }];
+    })
+    .slice(0, 4);
+  if (!findings.length)
+    throw new Error("The AI could not provide a verifiable source line. Try a more specific question.");
+  return {
+    summary: text(answer.summary, "This file contains the cited behavior below.", 350),
+    findings,
+    nextStep: text(answer.nextStep, "Open the cited lines and trace the next call.", 350),
+    limitation: text(answer.limitation, "This is static source analysis, not a runtime test.", 250),
+  };
 }
