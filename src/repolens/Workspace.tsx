@@ -16,6 +16,8 @@ import {
   Link2,
   LoaderCircle,
   Maximize2,
+  PanelLeft,
+  Focus,
   Plus,
   Search,
   ShieldCheck,
@@ -60,6 +62,12 @@ export default function Workspace({
       "",
   );
   const [search, setSearch] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [focusGraph, setFocusGraph] = useState(false);
+  const graphViewport = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    graphViewport.current?.scrollTo({ top: 0, left: 0 });
+  }, [focusGraph]);
   const [tourIndex, setTourIndex] = useState(0);
   const [step, setStep] = useState(0);
   const [importOpen, setImportOpen] = useState(
@@ -106,10 +114,25 @@ export default function Workspace({
   const filtered = analysis.nodes.filter((n) =>
     n.id.toLowerCase().includes(search.toLowerCase()),
   );
+  const graphNodes = useMemo(
+    () =>
+      focusGraph
+        ? analysis.nodes.filter(
+            (n) =>
+              n.id === node?.id ||
+              analysis.edges.some(
+                (e) =>
+                  (e.source === node?.id && e.target === n.id) ||
+                  (e.target === node?.id && e.source === n.id),
+              ),
+          )
+        : analysis.nodes,
+    [analysis, focusGraph, node?.id],
+  );
   const positions = useMemo(() => {
     const counts: Record<string, number> = {};
     return new Map(
-      analysis.nodes.map((n) => {
+      graphNodes.map((n) => {
         const y = counts[n.layer] || 0;
         counts[n.layer] = y + 1;
         return [
@@ -118,7 +141,7 @@ export default function Workspace({
         ];
       }),
     );
-  }, [analysis]);
+  }, [graphNodes]);
   const graphHeight = Math.max(
     420,
     ...[...positions.values()].map((p) => p.y + 115),
@@ -192,13 +215,22 @@ export default function Workspace({
     setImportOpen(true);
   };
   return (
-    <div className="rl-shell">
+    <div className={`rl-shell ${sidebarOpen ? "rl-sidebar-open" : ""}`}>
       <header className="rl-top">
+        <button
+          className="rl-sidebar-toggle rl-quiet"
+          aria-label="Toggle workspace sidebar"
+          aria-expanded={sidebarOpen}
+          aria-controls="workspace-sidebar"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <PanelLeft size={19} />
+        </button>
         <a className="rl-brand" href="/">
           <span className="rl-mark">
             <Layers size={21} />
           </span>
-          RepoLens<span className="rl-beta">Preview</span>
+          RepoLens
         </a>
         <div className="rl-top-center">A clearer way into a codebase</div>
         <div className="rl-top-actions">
@@ -226,7 +258,7 @@ export default function Workspace({
         </div>
       </header>
       <div className="rl-body">
-        <aside className="rl-sidebar">
+        <aside className="rl-sidebar" id="workspace-sidebar">
           <div className="rl-sidebar-heading">
             Workspace <span>{bridge?.records.length || 1}</span>
           </div>
@@ -338,20 +370,29 @@ export default function Workspace({
               </div>
               <h1>
                 {view === "map"
-                  ? "See the system."
+                  ? "Architecture, connected."
                   : view === "tour"
                     ? "Follow the story."
                     : "Read the evidence."}
               </h1>
               <p>
                 {view === "map"
-                  ? "From individual files to the connections that matter."
+                  ? "Explore the imports. Follow a walkthrough. Check the source."
                   : view === "tour"
                     ? "A guided route through the code, with the source beside you."
                     : "Inspect the exact code behind every architectural connection."}
               </p>
             </div>
             <div className="rl-project-actions">
+              {!bridge && (
+                <a
+                  className="rl-secondary"
+                  href="/home?analysis=22c2e718-006e-4206-9d73-0230d7a7152a"
+                >
+                  <ArrowUpRight size={15} />
+                  Live walkthrough
+                </a>
+              )}
               <button
                 className="rl-secondary"
                 onClick={download}
@@ -451,7 +492,26 @@ export default function Workspace({
               </div>
               {view === "map" && (
                 <>
-                  <div className="rl-graph-scroll">
+                  <div className="rl-graph-controls">
+                    <div>
+                      <strong>
+                        {focusGraph ? node?.label : "Repository map"}
+                      </strong>
+                      <span>
+                        {graphNodes.length} modules ·{" "}
+                        {focusGraph ? "direct connections" : "grouped by layer"}
+                      </span>
+                    </div>
+                    <button
+                      className="rl-secondary"
+                      aria-pressed={focusGraph}
+                      onClick={() => setFocusGraph(!focusGraph)}
+                    >
+                      <Focus size={15} />
+                      {focusGraph ? "Show all modules" : "Focus connections"}
+                    </button>
+                  </div>
+                  <div className="rl-graph-scroll" ref={graphViewport}>
                     <div className="rl-graph" style={{ height: graphHeight }}>
                       <div className="rl-layer-labels">
                         {layers.map((l) => (
@@ -478,22 +538,28 @@ export default function Workspace({
                             />
                           </marker>
                         </defs>
-                        {analysis.edges.map((e, i) => {
-                          const a = positions.get(e.source)!,
-                            b = positions.get(e.target)!;
-                          const active =
-                            e.source === node?.id || e.target === node?.id;
-                          return (
-                            <path
-                              key={i}
-                              className={active ? "active" : ""}
-                              d={`M ${a.x + 184} ${a.y + 33} C ${a.x + 222} ${a.y + 33}, ${b.x - 38} ${b.y + 33}, ${b.x} ${b.y + 33}`}
-                              markerEnd="url(#arrow)"
-                            />
-                          );
-                        })}
+                        {analysis.edges
+                          .filter(
+                            (e) =>
+                              positions.has(e.source) &&
+                              positions.has(e.target),
+                          )
+                          .map((e, i) => {
+                            const a = positions.get(e.source)!,
+                              b = positions.get(e.target)!;
+                            const active =
+                              e.source === node?.id || e.target === node?.id;
+                            return (
+                              <path
+                                key={i}
+                                className={active ? "active" : ""}
+                                d={`M ${a.x + 184} ${a.y + 33} C ${a.x + 222} ${a.y + 33}, ${b.x - 38} ${b.y + 33}, ${b.x} ${b.y + 33}`}
+                                markerEnd="url(#arrow)"
+                              />
+                            );
+                          })}
                       </svg>
-                      {analysis.nodes.map((n) => {
+                      {graphNodes.map((n) => {
                         const p = positions.get(n.id)!;
                         const linked = analysis.edges.some(
                           (e) =>
@@ -503,6 +569,7 @@ export default function Workspace({
                         return (
                           <button
                             key={n.id}
+                            aria-pressed={node?.id === n.id}
                             className={`rl-module ${n.layer} ${node?.id === n.id ? "selected" : ""} ${linked ? "linked" : ""}`}
                             style={{ left: p.x, top: p.y }}
                             onClick={() => choose(n.id)}
