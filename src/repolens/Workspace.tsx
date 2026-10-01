@@ -144,6 +144,23 @@ export default function Workspace({
     [analysis, focusGraph, node?.id],
   );
   const positions = useMemo(() => {
+    if (focusGraph && node) {
+      const importedBy = graphNodes.filter(
+        (n) => n.id !== node.id && analysis.edges.some(
+          (edge) => edge.source === n.id && edge.target === node.id,
+        ),
+      );
+      const imports = graphNodes.filter(
+        (n) => n.id !== node.id && !importedBy.includes(n),
+      );
+      const centerY = 140;
+      const selectedX = importedBy.length ? (imports.length ? 354 : 550) : (imports.length ? 170 : 354);
+      return new Map([
+        [node.id, { x: selectedX, y: centerY }],
+        ...importedBy.map((n, index) => [n.id, { x: 30, y: 140 + index * 91 }] as const),
+        ...imports.map((n, index) => [n.id, { x: 670, y: 140 + index * 91 }] as const),
+      ]);
+    }
     const counts: Record<string, number> = {};
     return new Map(
       graphNodes.map((n) => {
@@ -155,7 +172,7 @@ export default function Workspace({
         ];
       }),
     );
-  }, [graphNodes]);
+  }, [analysis.edges, focusGraph, graphNodes, node]);
   const graphHeight = Math.max(
     420,
     ...[...positions.values()].map((p) => p.y + 115),
@@ -529,15 +546,23 @@ export default function Workspace({
                     </button>
                   </div>
                   <div className="rl-graph-scroll" ref={graphViewport}>
-                    <div className="rl-graph" style={{ height: graphHeight }}>
-                      <div className="rl-layer-labels">
-                        {layers.map((l) => (
-                          <span key={l}>
-                            <i className={"rl-dot " + l} />
-                            {layerNames[l]}
-                          </span>
-                        ))}
-                      </div>
+                    <div className={"rl-graph" + (focusGraph ? " is-focused" : "")} style={{ height: graphHeight }}>
+                      {focusGraph ? (
+                        <div className="rl-focus-labels">
+                          <span>Imported by</span>
+                          <span>Selected file</span>
+                          <span>Imports</span>
+                        </div>
+                      ) : (
+                        <div className="rl-layer-labels">
+                          {layers.map((l) => (
+                            <span key={l}>
+                              <i className={"rl-dot " + l} />
+                              {layerNames[l]}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <svg width="892" height={graphHeight} aria-hidden="true">
                         <defs>
                           <marker

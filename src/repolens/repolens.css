@@ -1656,3 +1656,20 @@
   flex-wrap: wrap;
   gap: 8px 14px;
 }
+
+.rl-graph.is-focused {
+  margin-inline: auto;
+}
+.rl-focus-labels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 18px 30px;
+  color: var(--rl-muted);
+  font-size: 11px;
+}
+.rl-focus-labels span:nth-child(2) {
+  text-align: center;
+}
+.rl-focus-labels span:nth-child(3) {
+  text-align: right;
+}
