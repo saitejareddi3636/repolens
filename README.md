@@ -14,7 +14,7 @@ Built with DeepSpace 0.34.0, React 19, Hono, and a Babel TypeScript parser. The 
 2. Sign in and import a public GitHub repository.
 3. A durable DeepSpace job resolves a commit, reads bounded source, parses static imports, and saves the analysis. Progress updates arrive through synchronized records.
 4. Select graph modules to inspect code. Walkthrough steps link to exact GitHub lines at that commit.
-5. Generate an AI walkthrough or ask about a selected module. AI walkthrough citations are validated against stored file names and line ranges. This validates the reference, not the truth of the interpretation.
+5. Ask a question about a selected module. AI findings cite lines in that file; the answer distinguishes direct observations from suggested checks.
 6. Invite a registered reviewer to edit tour introductions. Publish a separate snapshot; later draft changes remain private. Unpublish removes the public snapshot.
 7. Generate optional ElevenLabs narration or export the analysis as JSON.
 
@@ -63,7 +63,9 @@ This is a static dependency explorer, not a runtime tracer or an arbitrary-progr
 
 Imports are capped at 32 source files, 22 KB per file, and 180 KB total. Partial analysis is labeled. AI receives a bounded excerpt; it may be unable to explain omitted code. Narration is capped at 2,000 characters and returned for playback in the current session; it is not a persistent hosted audio artifact.
 
-The app limits each user to 5 imports, 4 AI walkthroughs, 12 questions, and 2 narrations per UTC day, with an 80-operation daily application ceiling. Failed calls consume an attempt. The generic browser integration proxy is closed so it cannot bypass these limits. Native job socket access is owner/admin-only; members request the named import job through a validated action.
+The app limits each user to 5 imports, 12 questions, and 2 narrations per UTC day, with an 80-operation daily application ceiling. Failed calls consume an attempt. The generic browser integration proxy is closed so it cannot bypass these limits. Native job socket access is owner/admin-only; members request the named import job through a validated action.
+
+Generated walkthroughs were removed after a test found a cited but false permission claim. Walkthroughs now describe only parsed source relationships; source-linked AI answers remain available for narrower questions.
 
 Reviewers must sign in once before an owner can invite them by email. Reviewers edit the tour introduction; simultaneous edits use last-write-wins record updates. Public sharing uses independent snapshots because the installed SDK's action broadcast path does not evict previously delivered private records on visibility changes. Deleting a public snapshot emits a proper removal event. Revocation prevents future access; it cannot erase copies a viewer already saved.
 

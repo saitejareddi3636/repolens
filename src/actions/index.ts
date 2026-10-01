@@ -2,7 +2,7 @@ import type { ActionHandler, ActionTools } from "deepspace/worker";
 import { enqueueJob } from "deepspace/worker";
 import type { Env } from "../../worker";
 import { parseRepository } from "../repolens/analyzer";
-import { explainTour, integrate, reserveUsage } from "../repolens/server";
+import { integrate, reserveUsage } from "../repolens/server";
 import type { Analysis, AnalysisRow } from "../repolens/model";
 import { parseSourceAnswer } from "../repolens/answer";
 async function loadOwned(
@@ -77,26 +77,6 @@ export const actions: Record<string, ActionHandler<Env>> = {
     }
     return { success: true, data: { id } };
   }),
-  "explain-tour": safe(async ({ params, userId, tools, env }) => {
-    const { id, data } = await loadOwned(tools, params.id, userId);
-    if (!data.analysis) throw new Error("Wait for source analysis to finish.");
-    await reserveUsage(env, userId, "explain", 4);
-    const tour = await explainTour(
-      env,
-      data.analysis,
-      AbortSignal.timeout(60000),
-    );
-    const analysis = {
-      ...data.analysis,
-      tours: [
-        tour,
-        ...data.analysis.tours.filter((t) =>
-          t.steps.every((s) => s.kind === "source"),
-        ),
-      ],
-    };
-    return tools.update("analyses", id, { analysis });
-  }),
   "save-tour": safe(async ({ params, userId, tools }) => {
     const { id, data } = await loadOwned(tools, params.id, userId, true);
     if (!data.analysis) throw new Error("No walkthrough to edit.");
@@ -149,7 +129,10 @@ export const actions: Record<string, ActionHandler<Env>> = {
     const { id, data } = await loadOwned(tools, params.id, userId);
     if (typeof params.email !== "string" || params.email.length > 254)
       throw new Error("Enter your reviewer’s sign-in email.");
-    const users = await tools.query("users", { limit: 500 });
+    const users = await tools.query("users", {
+      where: { email: params.email.trim().toLowerCase() },
+      limit: 1,
+    });
     if (!users.success) return users;
     const reviewer = users.data.records.find(
       (r) =>

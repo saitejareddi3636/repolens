@@ -34,8 +34,9 @@ export type Bridge = {
   userId: string | null;
   records: Array<{ recordId: string; data: AnalysisRow }>;
   currentId: string | null;
+  analysisStatus: "loading" | "ready";
   select: (id: string | null) => void;
-  login: () => void;
+  login: (intent?: "import") => void;
   logout: () => void;
   action: (
     name: string,
@@ -87,6 +88,10 @@ export default function Workspace({
       new URLSearchParams(window.location.search).has("import"),
     ),
   );
+  useEffect(() => {
+    if (bridge?.signedIn && new URLSearchParams(window.location.search).has("import"))
+      setImportOpen(true);
+  }, [bridge?.signedIn]);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
@@ -231,12 +236,15 @@ export default function Workspace({
     const a = document.createElement("a");
     a.href = url;
     a.download = `${analysis.repository.split("/")[1]}-walkthrough.json`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setNotice("Export started. Check your browser’s downloads.");
   }
   const openImport = () => {
     if (bridge && !bridge.signedIn) {
-      bridge.login();
+      bridge.login("import");
       return;
     }
     if (!bridge) {
@@ -282,7 +290,7 @@ export default function Workspace({
             </button>
           )}
           {bridge && !bridge.signedIn && (
-            <button className="rl-quiet" onClick={bridge.login}>
+            <button className="rl-quiet" onClick={() => bridge.login()}>
               Sign in
             </button>
           )}
@@ -295,7 +303,7 @@ export default function Workspace({
           </div>
           <button
             className={"rl-repo " + (!bridge?.currentId ? "active" : "")}
-            onClick={() => (bridge ? bridge.select(null) : undefined)}
+            onClick={() => { bridge?.select(null); setSidebarOpen(false); }}
           >
             <Github size={19} />
             <span>
@@ -313,6 +321,7 @@ export default function Workspace({
                 bridge.select(r.recordId);
                 setTourIndex(0);
                 setStep(0);
+                setSidebarOpen(false);
               }}
             >
               <GitBranch size={17} />
@@ -329,7 +338,7 @@ export default function Workspace({
           <div className="rl-sidebar-heading rl-gap">Explore</div>
           <button
             className={"rl-nav " + (view === "map" ? "active" : "")}
-            onClick={() => setView("map")}
+            onClick={() => { setView("map"); setSidebarOpen(false); }}
           >
             <Layers size={17} />
             Architecture map
@@ -338,7 +347,7 @@ export default function Workspace({
             className={"rl-nav " + (view === "tour" ? "active" : "")}
             onClick={() => {
               setView("tour");
-              setStep(0);
+              setSidebarOpen(false);
             }}
           >
             <BookOpen size={17} />
@@ -346,7 +355,11 @@ export default function Workspace({
           </button>
           <button
             className={"rl-nav " + (view === "source" ? "active" : "")}
-            onClick={() => setView("source")}
+            onClick={() => {
+              if (view === "tour" && activeStep) choose(activeStep.citation.path);
+              setView("source");
+              setSidebarOpen(false);
+            }}
           >
             <Code2 size={17} />
             Source explorer
@@ -372,6 +385,7 @@ export default function Workspace({
                 onClick={() => {
                   choose(n.id);
                   if (view === "tour") setView("source");
+                  setSidebarOpen(false);
                 }}
               >
                 <span className={"rl-dot " + n.layer} />
@@ -442,8 +456,9 @@ export default function Workspace({
           </div>
           {bridge?.currentId && !row && (
             <div className="rl-progress" role="status">
-              This analysis is loading or isn’t shared with your account. The
-              source example is shown below.
+              {bridge.analysisStatus === "loading"
+                ? "Loading this analysis…"
+                : "Analysis unavailable. Check the link or ask the owner to share it."}
             </div>
           )}
           {row && row.status !== "complete" && (
@@ -506,14 +521,16 @@ export default function Workspace({
                     className={view === "tour" ? "active" : ""}
                     onClick={() => {
                       setView("tour");
-                      setStep(0);
                     }}
                   >
                     Walkthrough
                   </button>
                   <button
                     className={view === "source" ? "active" : ""}
-                    onClick={() => setView("source")}
+                    onClick={() => {
+                      if (view === "tour" && activeStep) choose(activeStep.citation.path);
+                      setView("source");
+                    }}
                   >
                     Source
                   </button>
@@ -758,24 +775,6 @@ export default function Workspace({
                         Edit introduction
                       </button>
                     )}
-                    <button
-                      disabled={!!busy || !isOwner}
-                      title={
-                        !isOwner
-                          ? "Available to the repository owner"
-                          : undefined
-                      }
-                      onClick={() =>
-                        act(
-                          "explain-tour",
-                          {},
-                          "AI walkthrough added. Open the first tour to explore it.",
-                        )
-                      }
-                    >
-                      <Sparkles size={15} />
-                      Generate AI walkthrough
-                    </button>
                   </div>
                   {audio && <audio controls src={audio} className="rl-audio" />}
                 </div>
@@ -873,7 +872,7 @@ export default function Workspace({
                   />
                   <button
                     aria-label="Ask about this file"
-                    disabled={!!busy || !canEdit || !question.trim()}
+                    disabled={!!busy || !canEdit || question.trim().length < 8}
                   >
                     {busy === "ask-source" ? "Asking…" : "Ask"}
                   </button>
@@ -1002,12 +1001,9 @@ export default function Workspace({
           ) : (
             notice
           )}
-          <button
-            aria-label="Dismiss notification"
-            onClick={() => setNotice("")}
-          >
+          {!busy && <button aria-label="Dismiss notification" onClick={() => setNotice("")}>
             <X size={15} />
-          </button>
+          </button>}
         </div>
       )}
       {importOpen && (
