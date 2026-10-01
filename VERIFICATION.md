@@ -1,6 +1,6 @@
 # RepoLens verification
 
-Agent-performed verification, September 30, 2026. These checks do not substitute for the applicant personally reviewing the submission.
+Verification record, September 30–October 1, 2026. The automated and production checks below establish specific behavior; they are not a claim that every repository shape or browser is covered.
 
 ## Automated checks
 
@@ -24,6 +24,6 @@ Published example: https://repolens.app.space/home?analysis=22c2e718-006e-4206-9
 
 Public JavaScript/TypeScript repositories only. Imports resolve relative paths; aliases, dynamic runtime behavior, and complete repository coverage are not promised. Analysis is capped at 32 files and 180 KB. AI prose is interpretation; citation validation checks source locations, not semantic truth. Narration is session-only. Reviewer introduction edits use last-write-wins. Daily server-side usage limits bound integration spend.
 
-## Applicant handoff
+## Reproducibility
 
-Use the personal checklist in SUBMISSION.md. Confirm the evaluator can access the native DeepSpace source repository before submitting its authenticated Git endpoint. No application has been submitted to the careers portal by the agent.
+Run the commands in README.md. The published analysis link above permits read-only review without an account. Source exports and module edges link to an immutable commit.

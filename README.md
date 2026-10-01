@@ -2,6 +2,10 @@
 
 Understand a public JavaScript or TypeScript repository through an interactive architecture map, source-linked walkthroughs, and contextual questions.
 
+**[Open the app](https://repolens.app.space)** · **[Explore a published analysis](https://repolens.app.space/home?analysis=22c2e718-006e-4206-9d73-0230d7a7152a)**
+
+![The RepoLens source map pairs a dependency graph with a commit-pinned source inspector](docs/preview.png)
+
 Built with DeepSpace 0.34.0, React 19, Hono, and a Babel TypeScript parser. The opening example analyzes MIT-licensed source from `deepdotspace/threadhunt` at a pinned commit; attribution is in `public/example-LICENSE.txt`.
 
 ## Product flow
@@ -63,4 +67,4 @@ The app limits each user to 5 imports, 4 AI walkthroughs, 12 questions, and 2 na
 
 Reviewers must sign in once before an owner can invite them by email. Reviewers edit the tour introduction; simultaneous edits use last-write-wins record updates. Public sharing uses independent snapshots because the installed SDK's action broadcast path does not evict previously delivered private records on visibility changes. Deleting a public snapshot emits a proper removal event. Revocation prevents future access; it cannot erase copies a viewer already saved.
 
-Source authority uses DeepSpace's native repository unless explicitly configured otherwise before the first deployment. Do not add a competing source remote casually: the platform latches its source authority on first publication.
+DeepSpace is the deployment source authority for this app. The GitHub repository is a reviewable mirror. Releases are built from committed DeepSpace source; update and deploy there first, then push the same commit to GitHub.

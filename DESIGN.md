@@ -8,4 +8,4 @@ Motion: selected paths respond to navigation; no decorative particles or automat
 Evidence: static imports are verified by AST parsing; generated interpretations are explicitly labeled and citations bounded against stored source. No fake live activity or invented metrics.
 Review: avoided a generic dashboard of stat cards. The central artifact is the graph itself, with code evidence always one interaction away.
 
-Design rules: Apple Design Skill is pinned as the `.design-rules` Git submodule. See DESIGN-REVIEW.md for the applied principles, measured contrast, layout changes, and verification. Clone with `git submodule update --init` to read the same revision.
+Design reference: the Apple Design Skill is pinned as the `.design-rules` Git submodule. DESIGN-REVIEW.md records the applied principles, measured contrast, layout changes, and verification. Clone with `git submodule update --init` to read the same revision.

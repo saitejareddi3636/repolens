@@ -1,6 +1,6 @@
 # RepoLens design review
 
-Applied the user-requested Apple Design Skill from `.design-rules/SKILL.md`. RepoLens is a responsive React web application: the accessibility, hierarchy and interaction principles apply; native macOS menu-bar and iOS navigation conventions do not.
+RepoLens is a responsive React web application. The design follows accessibility, hierarchy, and interaction principles from the Apple Design Skill pinned in `.design-rules`. Native macOS menu-bar and iOS navigation conventions do not apply.
 
 ## Thesis
 
