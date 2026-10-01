@@ -106,6 +106,7 @@ export default function Workspace({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [sharing, setSharing] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [email, setEmail] = useState("");
   const tour = analysis.tours[Math.min(tourIndex, analysis.tours.length - 1)];
   const activeStep = tour?.steps[Math.min(step, tour.steps.length - 1)];
@@ -240,7 +241,6 @@ export default function Workspace({
     a.click();
     a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    setNotice("Export started. Check your browser’s downloads.");
   }
   const openImport = () => {
     if (bridge && !bridge.signedIn) {
@@ -443,7 +443,7 @@ export default function Workspace({
               )}
               <button
                 className="rl-secondary"
-                onClick={download}
+                onClick={() => setExportOpen(true)}
                 aria-label="Export analysis"
               >
                 <Download size={15} />
@@ -1005,6 +1005,23 @@ export default function Workspace({
             <X size={15} />
           </button>}
         </div>
+      )}
+      {exportOpen && (
+        <Modal title="Export analysis JSON" close={() => setExportOpen(false)}>
+          <p>Download the commit-pinned analysis. If your browser blocks downloads, copy the JSON below.</p>
+          <div className="rl-export-actions">
+            <button className="rl-primary" onClick={download}><Download size={15} /> Download JSON</button>
+            <button className="rl-secondary" onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(JSON.stringify(analysis, null, 2));
+                setNotice("Analysis JSON copied.");
+              } catch {
+                setNotice("Clipboard unavailable. Select and copy the JSON below.");
+              }
+            }}><Copy size={15} /> Copy JSON</button>
+          </div>
+          <textarea className="rl-export-json" aria-label="Analysis JSON" readOnly value={JSON.stringify(analysis, null, 2)} />
+        </Modal>
       )}
       {importOpen && (
         <Modal

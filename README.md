@@ -16,7 +16,7 @@ Built with DeepSpace 0.34.0, React 19, Hono, and a Babel TypeScript parser. The 
 4. Select graph modules to inspect code. Walkthrough steps link to exact GitHub lines at that commit.
 5. Ask a question about a selected module. AI findings cite lines in that file; the answer distinguishes direct observations from suggested checks.
 6. Invite a registered reviewer to edit tour introductions. Publish a separate snapshot; later draft changes remain private. Unpublish removes the public snapshot.
-7. Generate optional ElevenLabs narration or export the analysis as JSON.
+7. Generate optional ElevenLabs narration or export the analysis as JSON. The export dialog also offers copyable JSON for browsers that block downloads.
 
 ## Run
 

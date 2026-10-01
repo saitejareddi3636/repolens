@@ -56,8 +56,11 @@ test("invalid analysis links resolve to an unavailable state", async ({ page }) 
 
 test("export starts a JSON download", async ({ page }) => {
   await page.goto("/");
-  const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export analysis" }).click();
+  await expect(page.getByRole("dialog", { name: "Export analysis JSON" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Analysis JSON" })).toHaveValue(/"repository": "deepdotspace\/threadhunt"/);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download JSON" }).click();
   expect((await download).suggestedFilename()).toMatch(/threadhunt-walkthrough\.json$/);
 });
 test("mobile page stays within viewport", async ({ page }) => {

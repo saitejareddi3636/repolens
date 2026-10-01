@@ -1006,6 +1006,22 @@
 .rl-modal > .rl-secondary {
   margin-left: 8px;
 }
+.rl-export-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rl-export-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.rl-modal .rl-export-json {
+  height: 180px;
+  margin-top: 16px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  resize: vertical;
+}
 .rl-import-facts {
   display: flex;
   gap: 15px;
